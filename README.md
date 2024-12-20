@@ -14,7 +14,7 @@ npx cap sync
 <docgen-index>
 
 * [`echo(...)`](#echo)
-* [`init(...)`](#init)
+* [`initializeClient(...)`](#initializeclient)
 * [`isReadyToPay(...)`](#isreadytopay)
 * [`loadPaymentData(...)`](#loadpaymentdata)
 * [`completeAuthorization(...)`](#completeauthorization)
@@ -43,10 +43,10 @@ echo(options: { value: string; }) => Promise<{ value: string; }>
 --------------------
 
 
-### init(...)
+### initializeClient(...)
 
 ```typescript
-init(googlePayClientOptions: InitPluginOptions) => Promise<void>
+initializeClient(googlePayClientOptions: InitPluginOptions) => Promise<void>
 ```
 
 | Param                        | Type                                                            |

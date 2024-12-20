@@ -23,7 +23,7 @@ export class CapacitorGooglePayWeb extends WebPlugin implements CapacitorGoogleP
 
 
 
-  async init(options: InitPluginOptions): Promise<void> {
+  async initializeClient(options: InitPluginOptions): Promise<void> {
     await GooglePayScriptLoader.loadScript();
 
     this._handler = new GooglePaymentWebHandler(options,

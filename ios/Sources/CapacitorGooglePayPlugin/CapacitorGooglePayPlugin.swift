@@ -10,22 +10,13 @@ public class CapacitorGooglePayPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "CapacitorGooglePayPlugin"
     public let jsName = "CapacitorGooglePay"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "init", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "initializeClient", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "isReadyToPay", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "loadPaymentData", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "completeAuthorization", returnType: CAPPluginReturnPromise)
     ]
-    private let implementation = CapacitorGooglePay()
 
-    @objc func echo(_ call: CAPPluginCall) {
-        let value = call.getString("value") ?? ""
-        call.resolve([
-            "value": implementation.echo(value)
-        ])
-    }
-
-    @objc func init(_ call: CAPPluginCall) {
+    @objc func initializeClient(_ call: CAPPluginCall) {
         call.resolve()
     }
 

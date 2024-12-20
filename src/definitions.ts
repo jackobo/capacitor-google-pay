@@ -6,7 +6,7 @@ export type AuthorizePaymentEventHandler = (paymentData: google.payments.api.Pay
 
 export interface CapacitorGooglePayPlugin {
   echo(options: { value: string }): Promise<{ value: string }>;
-  init(googlePayClientOptions: InitPluginOptions): Promise<void>;
+  initializeClient(googlePayClientOptions: InitPluginOptions): Promise<void>;
   isReadyToPay(request: google.payments.api.IsReadyToPayRequest): Promise<google.payments.api.IsReadyToPayResponse>;
   loadPaymentData(request: google.payments.api.PaymentDataRequest): Promise<google.payments.api.PaymentData>;
   completeAuthorization(result: google.payments.api.PaymentAuthorizationResult): Promise<void>;
