@@ -57,13 +57,8 @@ public class CapacitorGooglePayPlugin extends Plugin {
                             this.currentStartPaymentCall.reject("Failed to deserialize paymentDataJson into a JSObject");
                         }
                         break;
-                    case CommonStatusCodes.CANCELED:
-                        JSObject canceledResult = new JSObject();
-                        canceledResult.put("statusCode", "CANCELED");
-                        this.currentStartPaymentCall.reject(result.getStatus().getStatusMessage(), "CANCELED");
-                        break;
                     default:
-                        this.currentStartPaymentCall.reject(result.getStatus().getStatusMessage());
+                        this.currentStartPaymentCall.reject(result.getStatus().getStatusMessage(), CommonStatusCodes.getStatusCodeString(statusCode));
                         break;
                 }
             } catch (Exception ex) {

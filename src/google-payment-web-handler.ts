@@ -1,5 +1,4 @@
 import type {InitializeClientOptions, StartPaymentRequest, StartPaymentResponse} from "./definitions";
-import {PaymentErrorStatusCodeEnum} from "./definitions";
 
 export class GooglePaymentWebHandler {
 
@@ -45,9 +44,9 @@ export class GooglePaymentWebHandler {
     async startPayment(request: StartPaymentRequest): Promise<StartPaymentResponse> {
         try {
             return await this.googlePayClient.loadPaymentData(request);
-        }catch (err) {
-            if(err?.statusCode === PaymentErrorStatusCodeEnum.Canceled) {
-                throw {code: PaymentErrorStatusCodeEnum.Canceled}
+        }catch (err: any) {
+            if(err?.statusCode) {
+                throw new CapacitorGooglePayError(err.statusCode, err);
             } else {
                 throw err;
             }
@@ -57,3 +56,8 @@ export class GooglePaymentWebHandler {
 
 }
 
+class CapacitorGooglePayError extends Error {
+    constructor(public readonly code: string, public readonly innerError: Error) {
+        super();
+    }
+}
