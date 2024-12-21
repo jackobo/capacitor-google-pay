@@ -12,8 +12,7 @@ public class CapacitorGooglePayPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "initializeClient", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "isReadyToPay", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "loadPaymentData", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "completeAuthorization", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "startPayment", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func initializeClient(_ call: CAPPluginCall) {
@@ -26,11 +25,8 @@ public class CapacitorGooglePayPlugin: CAPPlugin, CAPBridgedPlugin {
         ])
     }
 
-    @objc func loadPaymentData(_ call: CAPPluginCall) {
+    @objc func startPayment(_ call: CAPPluginCall) {
         call.unavailable();
     }
 
-    @objc func completeAuthorization(_ call: CAPPluginCall) {
-        call.unavailable();
-    }
 }

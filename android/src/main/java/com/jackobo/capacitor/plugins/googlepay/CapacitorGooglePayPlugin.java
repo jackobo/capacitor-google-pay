@@ -1,5 +1,7 @@
 package com.jackobo.capacitor.plugins.googlepay;
 
+import android.app.Activity;
+
 import androidx.annotation.NonNull;
 
 import com.getcapacitor.JSObject;
@@ -7,6 +9,7 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.wallet.IsReadyToPayRequest;
@@ -14,26 +17,23 @@ import com.google.android.gms.wallet.PaymentData;
 import com.google.android.gms.wallet.PaymentDataRequest;
 import com.google.android.gms.wallet.PaymentsClient;
 import com.google.android.gms.wallet.Wallet;
+import com.google.android.gms.wallet.WalletConstants;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 
 @CapacitorPlugin(name = "CapacitorGooglePay")
 public class CapacitorGooglePayPlugin extends Plugin {
-
-    private CapacitorGooglePay implementation = new CapacitorGooglePay();
-
     private PaymentsClient paymentsClient;
     private GooglePaymentsClientOptions clientOptions;
-    @PluginMethod
-    public void echo(PluginCall call) {
-        String value = call.getString("value");
 
-        JSObject ret = new JSObject();
-        ret.put("value", implementation.echo(value));
-        call.resolve(ret);
-    }
 
     @PluginMethod
     public void initializeClient(PluginCall call) {
-        this.paymentsClient = buildPaymentsClient(call);
+        this.clientOptions = new GooglePaymentsClientOptions(call);
+        this.paymentsClient = this.clientOptions.buildPaymentsClient(getActivity());
         call.resolve();
     }
 
@@ -43,7 +43,8 @@ public class CapacitorGooglePayPlugin extends Plugin {
             return;
         }
 
-        IsReadyToPayRequest request = IsReadyToPayRequest.fromJson(call.getData().toString());
+        String json = call.getData().toString();
+        IsReadyToPayRequest request = IsReadyToPayRequest.fromJson(json);
 
         Task<Boolean> task = paymentsClient.isReadyToPay(request);
         task.addOnCompleteListener(new OnCompleteListener<Boolean>() {
@@ -56,45 +57,58 @@ public class CapacitorGooglePayPlugin extends Plugin {
                     //response.put("paymentMethodPresent")
                     call.resolve(response);
                 } else {
-                    call.reject("Error checking readiness to pay: " + task.getException().getMessage());
+                    Exception ex = task.getException();
+                    String message = ex.getMessage();
+                    call.reject("Error checking readiness to pay: " + message);
                 }
             }
         });
     }
 
     @PluginMethod
-    public void loadPaymentData(PluginCall call) {
+    public void startPayment(PluginCall call) {
         if(!isPaymentsClientInitialized(call)) {
             return;
         }
 
-        PaymentDataRequest request = PaymentDataRequest.fromJson(call.getData().toString());
-        Task<PaymentData> task = this.paymentsClient.loadPaymentData(request);
-        
-        task.addOnCompleteListener(new OnCompleteListener<PaymentData>() {
+        getActivity().runOnUiThread(new Runnable() {
             @Override
-            public void onComplete(@NonNull Task<PaymentData> task) {
-                if (task.isSuccessful()) {
-                    // Payment was authorized and successful
-                    PaymentData paymentData = task.getResult();
+            public void run() {
+                PaymentDataRequest request = PaymentDataRequest.fromJson(call.getData().toString());
+                Task<PaymentData> task = paymentsClient.loadPaymentData(request);
 
-                    // Process payment data (extract tokens, etc.)
-                    String paymentDataJson = paymentData.toJson();
-                    JSObject response = new JSObject();
-                    response.put("paymentData", paymentDataJson);
 
-                    // Resolve the plugin call with the payment data
-                    call.resolve(response);
+                task.addOnCompleteListener(new OnCompleteListener<PaymentData>() {
+                    @Override
+                    public void onComplete(@NonNull Task<PaymentData> task) {
+                        if (task.isSuccessful()) {
 
-                    // You may want to verify the payment on your backend now
-                    verifyPayment(paymentDataJson);
+                            PaymentData paymentData = task.getResult();
+                            String paymentDataJson = paymentData.toJson();
+                            try {
+                                call.resolve(new JSObject(paymentDataJson));
+                            } catch (JSONException e) {
+                                call.reject("Failed to deserialize paymentDataJson into a JSObject");
+                            }
+                        } else {
+                            Exception ex = task.getException();
+                            if(ex instanceof ApiException) {
+                                ApiException apiException = (ApiException)ex;
+                                int statusCode = apiException.getStatusCode();
+                                if (statusCode == WalletConstants.ERROR_CODE_USER_CANCELLED) {
+                                    JSObject canceledResult = new JSObject();
+                                    canceledResult.put("statusCode", "CANCELED");
+                                    call.reject("Payment authorization failed", canceledResult);
+                                } else {
+                                    call.reject("Payment authorization failed", apiException);
+                                }
+                            } else {
+                                call.reject("Payment authorization failed", ex);
+                            }
+                        }
+                    }
+                });
 
-                } else {
-                    // Payment failed, handle errors
-                    Exception e = task.getException();
-                    String errorMessage = (e != null) ? e.getMessage() : "Unknown error";
-                    call.reject("Payment failed: " + errorMessage);
-                }
             }
         });
 
@@ -107,15 +121,5 @@ public class CapacitorGooglePayPlugin extends Plugin {
             return false;
         }
         return true;
-    }
-
-    private PaymentsClient buildPaymentsClient(PluginCall call) {
-        this.clientOptions = new GooglePaymentsClientOptions(call);
-
-        var builder = new Wallet.WalletOptions.Builder();
-
-        builder.setEnvironment(this.clientOptions.getEnvironment());
-
-        return Wallet.getPaymentsClient(getActivity(), builder.build());
     }
 }

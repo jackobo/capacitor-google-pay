@@ -1,4 +1,7 @@
 export type InitPluginOptions = Omit<google.payments.api.PaymentOptions, 'paymentDataCallbacks'>
+export enum PaymentErrorStatusCodeEnum {
+  Canceled = "CANCELED"
+}
 
 export interface CapacitorGooglePayPlugin {
   initializeClient(googlePayClientOptions: InitPluginOptions): Promise<void>;
