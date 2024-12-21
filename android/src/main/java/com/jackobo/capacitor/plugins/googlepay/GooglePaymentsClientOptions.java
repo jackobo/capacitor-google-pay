@@ -1,6 +1,10 @@
 package com.jackobo.capacitor.plugins.googlepay;
 
 import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+
+import androidx.annotation.NonNull;
 
 import com.getcapacitor.PluginCall;
 import com.google.android.gms.wallet.PaymentsClient;
@@ -26,12 +30,12 @@ public class GooglePaymentsClientOptions {
     }
     private int environment;
 
-    public  PaymentsClient buildPaymentsClient(Activity activity) {
+    public  PaymentsClient buildPaymentsClient(@NonNull Application application) {
         var builder = new Wallet.WalletOptions.Builder();
 
         builder.setEnvironment(this.environment);
 
 
-        return Wallet.getPaymentsClient(activity, builder.build());
+        return Wallet.getPaymentsClient(application, builder.build());
     }
 }

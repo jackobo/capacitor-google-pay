@@ -2,6 +2,7 @@ package com.jackobo.capacitor.plugins.googlepay;
 
 import android.app.Activity;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 
 import com.getcapacitor.JSObject;
@@ -10,14 +11,17 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.CommonStatusCodes;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.gms.wallet.AutoResolveHelper;
 import com.google.android.gms.wallet.IsReadyToPayRequest;
 import com.google.android.gms.wallet.PaymentData;
 import com.google.android.gms.wallet.PaymentDataRequest;
 import com.google.android.gms.wallet.PaymentsClient;
 import com.google.android.gms.wallet.Wallet;
 import com.google.android.gms.wallet.WalletConstants;
+import com.google.android.gms.wallet.contract.TaskResultContracts;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,11 +33,54 @@ public class CapacitorGooglePayPlugin extends Plugin {
     private PaymentsClient paymentsClient;
     private GooglePaymentsClientOptions clientOptions;
 
+    private ActivityResultLauncher<Task<PaymentData>> paymentDataLauncher;
+
+    private PluginCall currentStartPaymentCall;
+
+    @Override
+    public void load() {
+        super.load();
+        paymentDataLauncher = getActivity().registerForActivityResult(new TaskResultContracts.GetPaymentDataResult(), result -> {
+
+            if(this.currentStartPaymentCall == null) {
+                return;
+            }
+
+            try {
+                int statusCode = result.getStatus().getStatusCode();
+                switch (statusCode) {
+                    case CommonStatusCodes.SUCCESS:
+                        try {
+                            String paymentDataJson = result.getResult().toJson();
+                            this.currentStartPaymentCall.resolve(new JSObject(paymentDataJson));
+                        } catch (JSONException e) {
+                            this.currentStartPaymentCall.reject("Failed to deserialize paymentDataJson into a JSObject");
+                        }
+
+
+                        break;
+                    case CommonStatusCodes.CANCELED:
+                        JSObject canceledResult = new JSObject();
+                        canceledResult.put("statusCode", "CANCELED");
+                        this.currentStartPaymentCall.reject(result.getStatus().getStatusMessage(), canceledResult);
+                        break;
+                    default:
+                        this.currentStartPaymentCall.reject(result.getStatus().getStatusMessage());
+                        break;
+                }
+            } catch (Exception ex) {
+                this.currentStartPaymentCall.reject("Payment task completion failed", ex);
+            } finally {
+                this.currentStartPaymentCall = null;
+            }
+
+        });
+    }
 
     @PluginMethod
     public void initializeClient(PluginCall call) {
         this.clientOptions = new GooglePaymentsClientOptions(call);
-        this.paymentsClient = this.clientOptions.buildPaymentsClient(getActivity());
+        this.paymentsClient = this.clientOptions.buildPaymentsClient(getActivity().getApplication());
         call.resolve();
     }
 
@@ -65,52 +112,18 @@ public class CapacitorGooglePayPlugin extends Plugin {
         });
     }
 
+
     @PluginMethod
     public void startPayment(PluginCall call) {
         if(!isPaymentsClientInitialized(call)) {
             return;
         }
 
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                PaymentDataRequest request = PaymentDataRequest.fromJson(call.getData().toString());
-                Task<PaymentData> task = paymentsClient.loadPaymentData(request);
+        currentStartPaymentCall = call;
 
-
-                task.addOnCompleteListener(new OnCompleteListener<PaymentData>() {
-                    @Override
-                    public void onComplete(@NonNull Task<PaymentData> task) {
-                        if (task.isSuccessful()) {
-
-                            PaymentData paymentData = task.getResult();
-                            String paymentDataJson = paymentData.toJson();
-                            try {
-                                call.resolve(new JSObject(paymentDataJson));
-                            } catch (JSONException e) {
-                                call.reject("Failed to deserialize paymentDataJson into a JSObject");
-                            }
-                        } else {
-                            Exception ex = task.getException();
-                            if(ex instanceof ApiException) {
-                                ApiException apiException = (ApiException)ex;
-                                int statusCode = apiException.getStatusCode();
-                                if (statusCode == WalletConstants.ERROR_CODE_USER_CANCELLED) {
-                                    JSObject canceledResult = new JSObject();
-                                    canceledResult.put("statusCode", "CANCELED");
-                                    call.reject("Payment authorization failed", canceledResult);
-                                } else {
-                                    call.reject("Payment authorization failed", apiException);
-                                }
-                            } else {
-                                call.reject("Payment authorization failed", ex);
-                            }
-                        }
-                    }
-                });
-
-            }
-        });
+        PaymentDataRequest request = PaymentDataRequest.fromJson(call.getData().toString());
+        final Task<PaymentData> task = paymentsClient.loadPaymentData(request);
+        task.addOnCompleteListener(paymentDataLauncher::launch);
 
 
     }
