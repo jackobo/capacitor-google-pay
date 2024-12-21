@@ -1,4 +1,5 @@
 import type {InitPluginOptions} from "./definitions";
+import {PaymentErrorStatusCodeEnum} from "./definitions";
 
 export class GooglePaymentWebHandler {
 
@@ -42,7 +43,16 @@ export class GooglePaymentWebHandler {
     }
 
     async startPayment(request: google.payments.api.PaymentDataRequest): Promise<google.payments.api.PaymentData> {
-        return await this.googlePayClient.loadPaymentData(request);
+        try {
+            return await this.googlePayClient.loadPaymentData(request);
+        }catch (err) {
+            if(err?.statusCode === PaymentErrorStatusCodeEnum.Canceled) {
+                throw {code: PaymentErrorStatusCodeEnum.Canceled}
+            } else {
+                throw err;
+            }
+        }
+
     }
 
 }
