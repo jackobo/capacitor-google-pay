@@ -6,10 +6,6 @@ import {GooglePaymentWebHandler} from "./google-payment-web-handler";
 
 
 export class CapacitorGooglePayWeb extends WebPlugin implements CapacitorGooglePayPlugin {
-  async echo(options: { value: string }): Promise<{ value: string }> {
-    console.log('ECHO', options);
-    return options;
-  }
 
   private _handler: GooglePaymentWebHandler | null = null;
 
@@ -26,20 +22,15 @@ export class CapacitorGooglePayWeb extends WebPlugin implements CapacitorGoogleP
   async initializeClient(options: InitPluginOptions): Promise<void> {
     await GooglePayScriptLoader.loadScript();
 
-    this._handler = new GooglePaymentWebHandler(options,
-        (paymentData) => this.notifyListeners('authorizePayment', paymentData));
+    this._handler = new GooglePaymentWebHandler(options);
   }
 
   async isReadyToPay(request: google.payments.api.IsReadyToPayRequest): Promise<google.payments.api.IsReadyToPayResponse> {
       return await this.handler.isReadyToPay(request);
   }
 
-  async loadPaymentData(request: google.payments.api.PaymentDataRequest): Promise<google.payments.api.PaymentData> {
-      return await this.handler.loadPaymentData(request);
-  }
-
-  async completeAuthorization(result: google.payments.api.PaymentAuthorizationResult): Promise<void> {
-    await this.handler.completeAuthorization(result);
+  async startPayment(request: google.payments.api.PaymentDataRequest): Promise<google.payments.api.PaymentData> {
+      return await this.handler.startPayment(request);
   }
 
 }
