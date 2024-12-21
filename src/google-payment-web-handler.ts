@@ -1,14 +1,14 @@
-import type {InitPluginOptions} from "./definitions";
+import type {InitializeClientOptions, StartPaymentRequest, StartPaymentResponse} from "./definitions";
 import {PaymentErrorStatusCodeEnum} from "./definitions";
 
 export class GooglePaymentWebHandler {
 
-    constructor(paymentsClientOptions: InitPluginOptions) {
+    constructor(paymentsClientOptions: InitializeClientOptions) {
         this._googlePayClient = this._createGooglePayClient(paymentsClientOptions);
     }
 
     private readonly _googlePayClient: google.payments.api.PaymentsClient | null;
-    private _createGooglePayClient(paymentsClientOptions: InitPluginOptions): google.payments.api.PaymentsClient | null{
+    private _createGooglePayClient(paymentsClientOptions: InitializeClientOptions): google.payments.api.PaymentsClient | null{
         try {
 
             if(!google?.payments?.api?.PaymentsClient) {
@@ -42,7 +42,7 @@ export class GooglePaymentWebHandler {
         return await this.googlePayClient.isReadyToPay(request);
     }
 
-    async startPayment(request: google.payments.api.PaymentDataRequest): Promise<google.payments.api.PaymentData> {
+    async startPayment(request: StartPaymentRequest): Promise<StartPaymentResponse> {
         try {
             return await this.googlePayClient.loadPaymentData(request);
         }catch (err) {

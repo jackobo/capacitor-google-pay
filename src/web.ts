@@ -1,9 +1,7 @@
 import { WebPlugin } from '@capacitor/core';
 
-import type {CapacitorGooglePayPlugin, InitPluginOptions} from './definitions';
+import type {CapacitorGooglePayPlugin, InitializeClientOptions, IsReadyToPayRequest, IsReadyToPayResponse, StartPaymentRequest, StartPaymentResponse} from './definitions';
 import {GooglePaymentWebHandler} from "./google-payment-web-handler";
-
-
 
 export class CapacitorGooglePayWeb extends WebPlugin implements CapacitorGooglePayPlugin {
 
@@ -19,17 +17,17 @@ export class CapacitorGooglePayWeb extends WebPlugin implements CapacitorGoogleP
 
 
 
-  async initializeClient(options: InitPluginOptions): Promise<void> {
+  async initializeClient(options: InitializeClientOptions): Promise<void> {
     await GooglePayScriptLoader.loadScript();
 
     this._handler = new GooglePaymentWebHandler(options);
   }
 
-  async isReadyToPay(request: google.payments.api.IsReadyToPayRequest): Promise<google.payments.api.IsReadyToPayResponse> {
+  async isReadyToPay(request: IsReadyToPayRequest): Promise<IsReadyToPayResponse> {
       return await this.handler.isReadyToPay(request);
   }
 
-  async startPayment(request: google.payments.api.PaymentDataRequest): Promise<google.payments.api.PaymentData> {
+  async startPayment(request: StartPaymentRequest): Promise<StartPaymentResponse> {
       return await this.handler.startPayment(request);
   }
 

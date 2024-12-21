@@ -1,12 +1,39 @@
 # @jackobo/capacitor-google-pay
 
 Capacitor pluging for Google Pay
+Example:
+
 
 ## Install
 
 ```bash
 npm install @jackobo/capacitor-google-pay
 npx cap sync
+```
+
+## Usage
+
+```typescript
+import {CapacitorGooglePay, PaymentErrorStatusCodeEnum} from "@jackobo/capacitor-google-pay";
+async function pay() {
+ await CapacitorGooglePay.initializeClient({
+  environment: "TEST" //or PRODUCTION
+ });
+
+ const {result} = await CapacitorGooglePay.isReadyToPay(isReadyToPayRequest);
+ if (!result) { // it means Google Pay is not available
+  return;
+ }
+
+ try {
+  const paymentData = await CapacitorGooglePay.startPayment(startPaymentRequest)
+  await callYourServer(paymentData.paymentMethodData)
+ } catch (err) {
+  if (err?.code !== PaymentErrorStatusCodeEnum.Canceled) {
+   //show error to user here
+  }
+ }
+}
 ```
 
 ## API
@@ -26,12 +53,14 @@ npx cap sync
 ### initializeClient(...)
 
 ```typescript
-initializeClient(googlePayClientOptions: InitPluginOptions) => Promise<void>
+initializeClient(options: InitializeClientOptions) => Promise<void>
 ```
 
-| Param                        | Type                                                            |
-| ---------------------------- | --------------------------------------------------------------- |
-| **`googlePayClientOptions`** | <code><a href="#initpluginoptions">InitPluginOptions</a></code> |
+Initialize the Google Pay PaymentsClient object. You must call this at least once before calling any other methods of the plugin.
+
+| Param         | Type                                                                        |
+| ------------- | --------------------------------------------------------------------------- |
+| **`options`** | <code><a href="#initializeclientoptions">InitializeClientOptions</a></code> |
 
 --------------------
 
@@ -39,14 +68,16 @@ initializeClient(googlePayClientOptions: InitPluginOptions) => Promise<void>
 ### isReadyToPay(...)
 
 ```typescript
-isReadyToPay(request: google.payments.api.IsReadyToPayRequest) => Promise<google.payments.api.IsReadyToPayResponse>
+isReadyToPay(request: IsReadyToPayRequest) => Promise<IsReadyToPayResponse>
 ```
 
-| Param         | Type                             |
-| ------------- | -------------------------------- |
-| **`request`** | <code>IsReadyToPayRequest</code> |
+Checks if the Google Pay is available.
 
-**Returns:** <code>Promise&lt;IsReadyToPayResponse&gt;</code>
+| Param         | Type                                                                |
+| ------------- | ------------------------------------------------------------------- |
+| **`request`** | <code><a href="#isreadytopayrequest">IsReadyToPayRequest</a></code> |
+
+**Returns:** <code>Promise&lt;<a href="#isreadytopayresponse">IsReadyToPayResponse</a>&gt;</code>
 
 --------------------
 
@@ -54,8 +85,10 @@ isReadyToPay(request: google.payments.api.IsReadyToPayRequest) => Promise<google
 ### startPayment(...)
 
 ```typescript
-startPayment(request: google.payments.api.PaymentDataRequest) => Promise<google.payments.api.PaymentData>
+startPayment(request: StartPaymentRequest) => Promise<StartPaymentResponse>
 ```
+
+Starts the payment process
 
 | Param         | Type                            |
 | ------------- | ------------------------------- |
@@ -69,7 +102,12 @@ startPayment(request: google.payments.api.PaymentDataRequest) => Promise<google.
 ### Type Aliases
 
 
-#### InitPluginOptions
+#### InitializeClientOptions
+
+It is used to initialize a PaymentClient object.
+This is basically a google.payments.api.PaymentOptions object but with the paymentDataCallbacks property omitted.
+Payment callbacks are not supported.
+See documentation https://developers.google.com/pay/api/web/reference/request-objects#PaymentOptions
 
 <code><a href="#omit">Omit</a>&lt;google.payments.api.PaymentOptions, 'paymentDataCallbacks'&gt;</code>
 
@@ -93,5 +131,37 @@ From T, pick a set of properties whose keys are in the union K
 <a href="#exclude">Exclude</a> from T those types that are assignable to U
 
 <code>T extends U ? never : T</code>
+
+
+#### IsReadyToPayRequest
+
+This is a google.payments.api.<a href="#isreadytopayrequest">IsReadyToPayRequest</a> object.
+See documentation https://developers.google.com/pay/api/web/reference/request-objects#IsReadyToPayRequest
+
+<code>google.payments.api.<a href="#isreadytopayrequest">IsReadyToPayRequest</a></code>
+
+
+#### IsReadyToPayResponse
+
+This is a google.payments.api.<a href="#isreadytopayresponse">IsReadyToPayResponse</a>.
+See documentation https://developers.google.com/pay/api/web/reference/response-objects#IsReadyToPayResponse
+
+<code>google.payments.api.<a href="#isreadytopayresponse">IsReadyToPayResponse</a></code>
+
+
+#### StartPaymentRequest
+
+This is a google.payments.api.PaymentDataRequest object.
+See documentation https://developers.google.com/pay/api/web/reference/request-objects#PaymentDataRequest
+
+<code>google.payments.api.PaymentDataRequest</code>
+
+
+#### StartPaymentResponse
+
+This is a google.payments.api.PaymentData object.
+See documentation https://developers.google.com/pay/api/web/reference/response-objects#PaymentData
+
+<code>google.payments.api.PaymentData</code>
 
 </docgen-api>
