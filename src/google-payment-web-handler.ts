@@ -45,11 +45,7 @@ export class GooglePaymentWebHandler {
         try {
             return await this.googlePayClient.loadPaymentData(request);
         }catch (err: any) {
-            if(err?.statusCode) {
-                throw new CapacitorGooglePayError(err.statusCode, err);
-            } else {
-                throw err;
-            }
+            throw new CapacitorGooglePayError(err);
         }
 
     }
@@ -57,7 +53,12 @@ export class GooglePaymentWebHandler {
 }
 
 class CapacitorGooglePayError extends Error {
-    constructor(public readonly code: string, public readonly innerError: Error) {
-        super();
+    constructor(public readonly innerError: any) {
+        super(innerError?.message ?? innerError?.statusMessage);
     }
+
+    get code(): string | undefined {
+        return this.innerError?.statusCode;
+    }
+
 }
